@@ -89,22 +89,22 @@ def docker_client() -> Generator[DockerClient, None, None]:
 
 
 @contextlib.contextmanager
-def testing_context(command_line_options: CommandLineOptions, docker_client: DockerClient, bootstrap_keypair: KeyPair = None, peers_keypairs: List[KeyPair] = None, network_peers: int = 2) -> Generator[TestingContext, None, None]:
+def testing_context(command_line_options: CommandLineOptions, docker_client: DockerClient, bootstrap_keypair: KeyPair = None, bonds_file_keypairs: List[KeyPair] = None, network_peers: int = 2) -> Generator[TestingContext, None, None]:
     if bootstrap_keypair is None:
         bootstrap_keypair = PREGENERATED_KEYPAIRS[0]
-    if peers_keypairs is None:
-        peers_keypairs = PREGENERATED_KEYPAIRS[1:][:network_peers]
+    if bonds_file_keypairs is None:
+        bonds_file_keypairs = PREGENERATED_KEYPAIRS[1:][:network_peers]
 
     random_seed = time.time() if command_line_options.random_seed is None else command_line_options.random_seed
     logging.critical("Using tests random number generator seed: %d", random_seed)
     random_generator = random.Random(random_seed)
 
-    bonds_file_keypairs = [bootstrap_keypair] + peers_keypairs
+    bonds_file_keypairs = [bootstrap_keypair] + bonds_file_keypairs
     with temporary_bonds_file(random_generator, bonds_file_keypairs) as bonds_file:
         context = TestingContext(
             bonds_file=bonds_file,
             bootstrap_keypair=bootstrap_keypair,
-            peers_keypairs=peers_keypairs,
+            peers_keypairs=bonds_file_keypairs,
             docker=docker_client,
             node_startup_timeout=command_line_options.node_startup_timeout,
             network_converge_timeout=command_line_options.network_converge_timeout,
