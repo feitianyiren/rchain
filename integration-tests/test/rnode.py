@@ -548,7 +548,7 @@ def docker_network(context: TestingContext, docker_client: DockerClient) -> Gene
 
 
 @contextlib.contextmanager
-def started_bootstrap_node(*, context: TestingContext, network, mount_dir: str = None) -> Generator[Node, None, None]:
+def started_bootstrap(*, context: TestingContext, network: Network, mount_dir: str = None, cli_options: Optional[Dict] = None) -> Generator[Node, None, None]:
     bootstrap_node = make_bootstrap_node(
         docker_client=context.docker,
         network=network,
@@ -556,6 +556,7 @@ def started_bootstrap_node(*, context: TestingContext, network, mount_dir: str =
         keypair=context.bootstrap_keypair,
         command_timeout=context.command_timeout,
         mount_dir=mount_dir,
+        cli_options=cli_options,
     )
     try:
         wait_for_node_started(context, bootstrap_node)
@@ -565,7 +566,14 @@ def started_bootstrap_node(*, context: TestingContext, network, mount_dir: str =
 
 
 @contextlib.contextmanager
-def docker_network_with_started_bootstrap(context):
+def docker_network_with_started_bootstrap(context: TestingContext) -> Node:
     with docker_network(context, context.docker) as network:
-        with started_bootstrap_node(context=context, network=network, mount_dir=context.mount_dir) as node:
+        with started_bootstrap(context=context, network=network, mount_dir=context.mount_dir) as node:
+            yield node
+
+
+@contextlib.contextmanager
+def ready_bootstrap(context: TestingContext, cli_options: Optional[Dict] = None) -> Node:
+    with docker_network(context, context.docker) as network:
+        with started_bootstrap(context=context, network=network, mount_dir=context.mount_dir, cli_options=cli_options) as node:
             yield node
